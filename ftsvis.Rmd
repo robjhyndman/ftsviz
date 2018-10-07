@@ -1,0 +1,454 @@
+---
+title: "Data visualization for functional time series"
+author: "Rob J Hyndman"
+date: "December 2018"
+fontsize: 14pt
+output:
+  beamer_presentation:
+    fig_height: 5
+    fig_width: 8
+    highlight: tango
+    incremental: no
+    keep_tex: yes
+    theme: metropolis
+    includes:
+      in_header: rjh.tex
+---
+
+
+<!-- Any good data analysis begins with a careful graphical exploration of the observed data. For functional time series data, this area of statistical analysis has been largely neglected. I will look at the tools that are available such as rainbow plots and functional box plots, and propose several new tools including functional ACF plots, functional season plots, calendar plots, and embedded pairwise distance plots. These will be illustrated using pedestrian count data in Melbourne, smart metre data from Ireland, and mortality data from France. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, cache=TRUE,
+  dev.args=list(bg=grey(0.9), pointsize=11))
+library(tidyverse)
+library(lubridate)
+library(glue)
+library(tsibble)
+library(sugrrants)
+source("data/functions.R")
+```
+
+# Intro
+
+## Rainbow plots
+
+```{r rainbow}
+library(demography)
+plot(fr.mort, series='male')
+```
+
+## Functional box plots
+
+## Functional ACF plots
+
+## Functional season plots
+
+## Calendar plots
+
+## Embedded pairwise distance plots
+
+
+
+
+# Smart metre data analytics
+
+## Disaggregated electricity demand data
+
+\placefig{0}{2.4}{width=16cm, height=16cm}{SMARTGRID.jpg}
+\begin{textblock}{3}(13.7,8.6)
+{\color{black}\tiny \url{http://solutions.3m.com}}
+\end{textblock}
+
+\only<2>{\placefig{11.4}{.1}{width=4.5cm,height=4.5cm}{example-smart-meter.png}}
+
+## Smart metre data
+
+\alert{vec.ausnetservices.com.au}
+
+\vspace*{.3cm}
+
+\centerline{\includegraphics[width=15cm,height=15cm]{ausnet.png}}
+
+```{r holidays}
+vic_holidays <- holiday_aus(2017:2018, state = "VIC")
+```
+
+```{r pctiles}
+pcgrid <- seq(10,90,by=1)/100
+pccols <- rainbow(120)[1:100]
+#c("#1b9e77","#d95f02","#7570b3","#d95f02","#1b9e77")
+```
+
+## George's data
+
+```{r georgedata, dependson='holidays'}
+george <- read_csv("data/smart_meter/george1.csv", skip=1,
+  col_names = c("id", "date", paste0("d", 1:48), paste0("stuff", 1:5)),
+  col_types = "ccddddddddddddddddddddddddddddddddddddddddddddddddccccc")
+george <- george %>% filter(id == 300)
+george <- george %>%
+  mutate(date = ymd(date)) %>%
+  select(id:d48) %>%
+  gather(halfhour, kwh, d1:d48) %>%
+  mutate(halfhour = as.numeric(sub("d", "", halfhour))/2) %>%
+  arrange(date, halfhour) %>%
+  mutate(wday = lubridate::wday(date, label = TRUE, abbr = TRUE, week_start = 1),
+         month = lubridate::month(date, label = TRUE, abbr = TRUE),
+         year = lubridate::year(date),
+         tow = as.numeric(wday)*24 - 24 + halfhour,
+         dt = ymd_hm(glue("{date} 0:00"), tz = "Australia/Melbourne") +
+           minutes(60*halfhour),
+         work = ifelse(wday %in% c("Mon", "Tue", "Wed", "Thu", "Fri"), 1, 0),
+         work = ifelse(date %in% vic_holidays$date, 0, work))
+```
+
+```{r plotdata, fig.height=3.5, dependson='georgedata'}
+george %>%
+  ggplot(aes(x=dt, y=kwh)) +
+    geom_line() +
+    scale_x_datetime(date_breaks="1 month",
+                     date_minor_breaks="1 week",
+                     date_labels="%b %y") +
+    theme(axis.text = element_text(hjust = 0)) +
+    xlab("Month") + ylab("kWh")
+```
+
+## George's data
+
+```{r calendar, fig.width=10, fig.height=5, dependson='georgedata'}
+p1 <- george %>%
+  frame_calendar(x = halfhour, y = kwh, date = date, ncol = 5,margin=.1) %>%
+  ggplot(aes(x = .halfhour, y = .kwh, group = date, colour=factor(work))) +
+    geom_line() +
+    scale_colour_brewer("work", palette = "Dark2") +
+    theme(legend.position="none")
+prettify(p1, nudge_x=-.5)
+```
+
+\only<2>{\begin{textblock}{5.7}(9.5,6)
+\begin{alertblock}{}
+Calendar plot available in the sugrrants package for R.
+\end{alertblock}\end{textblock}}
+
+## George's data
+
+```{r time0, dependson='georgedata',fig.height=4.08}
+george %>%
+  ggplot(aes(x=halfhour, y=kwh)) +
+  geom_jitter(height=0, width=0.2, size=.1, alpha=0.5) + xlab("Time of day") + ylab("kWh") +
+  scale_x_continuous(breaks=seq(3,24,by=3), minor_breaks = seq(0,24,by=1))
+```
+
+\vspace*{10cm}
+
+## George's data
+
+```{r time1, dependson='georgedata', fig.height=4.08}
+george %>%
+  ggplot(aes(x=halfhour, y=kwh, group=wday)) +
+  geom_point(size=.1, alpha=0.25) + facet_grid(~ wday) +
+  xlab("Time of day") + ylab("kWh") +
+  scale_x_continuous(breaks=c(6,12,18,24),minor_breaks = seq(0,24,by=2))
+```
+
+\vspace*{10cm}
+
+## George's data
+
+```{r gpc, dependson=c('georgedata','pctiles')}
+gpc <- george %>%
+  crossing(pctile = pcgrid) %>%
+  group_by(tow, pctile) %>%
+  summarise(pc = quantile(kwh, unique(pctile))) %>%
+  left_join(george) %>%
+  select(-id, -date, -kwh, -dt,-year, -month, -work) %>%
+  unique() %>%
+  mutate(pcstring = factor(pctile,
+                        labels=paste(round(pcgrid*100),"%",sep="")))
+```
+
+```{r time2, dependson=c('gpc','pctiles')}
+gpc %>%
+  filter(pcstring %in% c("10%","25%","50%","75%","90%")) %>%
+  ggplot(aes(x=halfhour, group=wday)) +
+    geom_point(data=george, aes(x=halfhour, y=kwh), size=.1, alpha=0.25) +
+    geom_line(aes(x=halfhour, y=pc, group=pctile, col=pctile)) +
+    facet_grid(~ wday) +
+    xlab("Time of day") + ylab("kWh") +
+    scale_x_continuous(breaks=c(6,12,18,24),minor_breaks = seq(0,24,by=2)) +
+    scale_colour_gradientn(colours=pccols, name="Percentile") +
+    theme(legend.position="bottom", legend.direction="horizontal",
+          legend.key.width=unit(1,"cm"),
+          legend.key.height=unit(.3,"cm"))
+```
+
+\vspace*{10cm}
+
+## George's data
+
+```{r time3, dependson=c('gpc','pctiles')}
+gpc %>%
+  ggplot() +
+    geom_point(data=george, aes(x=halfhour, y=kwh), size=.1, alpha=0.3) +
+    geom_line(aes(x=halfhour, y=pc, group=pctile, col=pctile)) +
+    facet_grid(~ wday) +
+    xlab("Time of day") + ylab("kWh") +
+    scale_x_continuous(breaks=c(6,12,18,24),minor_breaks = seq(0,24,by=2)) +
+    scale_colour_gradientn(colours=pccols,name="Percentile") +
+    theme(legend.position="bottom", legend.direction="horizontal",
+          legend.key.width=unit(1,"cm"),
+          legend.key.height=unit(.3,"cm"))
+```
+
+\vspace*{10cm}
+
+
+## Clare's data
+
+```{r claredata, dependson='holidays'}
+clare <- read_csv("data/smart_meter/clare1.csv", skip=1,
+     col_names = c("id", "date", paste0("d", 1:48), paste0("stuff", 1:5)),
+     col_types = "ccddddddddddddddddddddddddddddddddddddddddddddddddccccc") %>%
+  filter(id == 300) %>%
+  mutate(date = ymd(date)) %>%
+  select(id:d48) %>%
+  gather(halfhour, kwh, d1:d48) %>%
+  mutate(halfhour = as.numeric(sub("d", "", halfhour))/2) %>%
+  arrange(date, halfhour) %>%
+  mutate(wday = lubridate::wday(date, label = TRUE, abbr = TRUE, week_start = 1),
+         month = lubridate::month(date, label = TRUE, abbr = TRUE),
+         year = lubridate::year(date),
+         tow = as.numeric(wday)*24 - 24 + halfhour,
+         dt = ymd_hm(glue("{date} 0:00"), tz = "Australia/Melbourne") +
+           minutes(60*halfhour),
+         work = ifelse(wday %in% c("Mon", "Tue", "Wed", "Thu", "Fri"), 1, 0),
+         work = ifelse(date %in% vic_holidays$date, 0, work))
+```
+
+```{r clare2, fig.height=3.5, dependson='claredata'}
+clare %>%
+  ggplot(aes(x=dt, y=kwh)) +
+    geom_line() +
+    scale_x_datetime(date_breaks="1 month",
+                     date_minor_breaks="1 week",
+                     date_labels="%b %y") +
+    theme(axis.text = element_text(hjust = 0, size=6.5)) +
+    xlab("Month") + ylab("kWh")
+```
+
+\vspace*{10cm}
+
+## Clare's data
+
+```{r clare3, dependson='claredata', fig.height=5, fig.width=10}
+p1 <- clare %>%
+  frame_calendar(x = halfhour, y = kwh, date = date, ncol = 5,margin=.1) %>%
+  ggplot(aes(x = .halfhour, y = .kwh, group = date, colour=factor(work))) +
+    geom_line() +
+    scale_colour_brewer("work", palette = "Dark2") +
+    theme(legend.position="none")
+prettify(p1, nudge_x=-.5)
+```
+
+\vspace*{10cm}
+
+## Clare's data
+
+```{r clare4, dependson='claredata', fig.height=4.08}
+clare %>%
+  ggplot(aes(x=halfhour, y=kwh, group=wday)) +
+  geom_point(size=.1, alpha=0.25) + facet_grid(~ wday) +
+  xlab("Time of day") + ylab("kWh") +
+  scale_x_continuous(breaks=c(6,12,18,24),minor_breaks = seq(0,24,by=2))
+```
+
+\vspace*{10cm}
+
+## Clare's data
+
+```{r cpc, dependson=c('claredata','pctiles'), fig.height=4.08}
+cpc <- clare %>%
+  crossing(pctile = pcgrid) %>%
+  group_by(tow, pctile) %>%
+  summarise(pc = quantile(kwh, unique(pctile))) %>%
+  left_join(clare) %>%
+  select(-id, -date, -kwh, -dt,-year, -month, -work) %>%
+  unique() %>%
+  mutate(pcstring= factor(pctile,
+                        labels=paste(round(pcgrid*100),"%",sep="")))
+```
+
+```{r clare5, dependson=c('gpc','pctiles')}
+cpc %>%
+  ggplot() +
+    geom_point(data=clare, aes(x=halfhour, y=kwh), size=.1, alpha=0.25) +
+    geom_line(aes(x=halfhour, y=pc, group=pctile, col=pctile)) +
+    facet_grid(~ wday) +
+    xlab("Time of day") + ylab("kWh") +
+    scale_x_continuous(breaks=c(6,12,18,24),minor_breaks = seq(0,24,by=2)) +
+    scale_colour_gradientn(colours=pccols,name="Percentile") +
+    theme(legend.position="bottom", legend.direction="horizontal",
+          legend.key.width=unit(1,"cm"),
+          legend.key.height=unit(.3,"cm"))
+```
+
+
+\vspace*{10cm}
+
+## Percentiles conditional on time of week
+\vspace*{0.2cm}
+\fontsize{12}{14}\sf
+
+\centerline{\includegraphics[width=9.8cm]{quantileplot}}
+
+* Percentiles for each household and each half-hour of the week.
+* Provides a unique fingerprint of typical usage for a given household.
+* 336 probability distributions per household.
+* Avoids missing data issues and variation in series length
+* Avoids timing of household events, holidays, etc.
+* Allows clustering of households based on probabilistic behaviour rather than coincident behaviour.
+* A more complicated version also allows it to change across the year.
+
+## Finding anomalous smart metres
+
+```{r load, include=FALSE}
+load("data/DT.rda")
+load("data/qdemand.rda")
+load("data/jsdmat.rda")
+source("data/functions.R")
+```
+
+\begin{block}{Irish smart metre data}
+\begin{itemize}\tightlist
+ \item 500 households from smart metering trial:\\ 14 July 2009 -- 31 December 2010.
+ \item Electricity consumption at 30-minute intervals.
+ \item Heating/cooling energy usage excluded.
+\end{itemize}
+\end{block}
+
+\placefig{1.5}{5.5}{width=5.5cm, height=1.8cm, keepaspectratio=false}{timeplot}
+\placefig{9.1}{5.5}{width=5.5cm, height=1.8cm, keepaspectratio=false}{quantileplot}
+\begin{textblock}{3}(7.3,6.2)\LARGE
+$\longrightarrow$
+\end{textblock}
+\vspace*{2.7cm}\fontsize{13}{15}\sf
+
+The time series of $535\times48$ observations per household is mapped to a set of $7\times48\times99$ percentiles giving a bivariate surface for each household.
+
+## Finding anomalous smart metres
+
+\begin{block}{}
+Can we compute pairwise distances between all households?
+\end{block}
+
+\placefig{1.2}{2.5}{width=5.5cm, height=1.8cm, keepaspectratio=false}{quantileplot}
+\placefig{9.3}{2.5}{width=5.5cm, height=1.8cm, keepaspectratio=false}{quantile2plot}
+\begin{textblock}{2.2}(6.9,3.2)
+\centerline{$\leftarrow ~ ? ~ \rightarrow$}
+\fontsize{11}{12}\sf
+\centerline{Distance}
+\end{textblock}
+
+\vspace*{2.7cm}\pause
+
+ * Jensen-Shannon measure gives distance between two densities\pause
+ * Distance between household $i$ and household $j$:\newline  $\Delta_{ij} =$ sum of $7\times48$ JS distances.\pause
+ * Similarity between two households: $\displaystyle w_{ij} = \exp(-\Delta_{ij}^2/h^2)$\pause
+ * Household typicality: $\displaystyle f_i = \sum_{j} w_{ij}$.
+
+## Most typical household
+
+```{r typical, dependson='load'}
+elecembed <- embedding(jsdmat, m=2)
+# Look at modal observations
+fxyhi <- kdedist(elecembed$distances, bandwidth=1e5)
+mode1 <- order(fxyhi,decreasing=TRUE)[1]
+mode2 <- order(fxyhi,decreasing=TRUE)[2]
+mode3 <- order(fxyhi,decreasing=TRUE)[3]
+qdemandplot(mode1)
+```
+
+## Most anomalous household
+
+```{r outlier1, dependson='typical'}
+outlier1 <- order(fxyhi,decreasing=FALSE)[1]
+qdemandplot(outlier1)
+```
+
+## Visualization via embedding
+
+\begin{textblock}{6}(0.2,1.3)
+\fontsize{12}{13}\sf
+\begin{block}{}
+Embed conditional densities in a 2d space where the distances are preserved ``as far as possible''.
+\end{block}
+
+\fontsize{12}{12}\sf
+\begin{itemize}\tightlist
+\item With more data, we might be able to find clusters of similar households.
+\item Anomalous households may be due to:
+\begin{itemize}
+\item malfunctioning equipment
+\item unusual schedules or behaviours
+\item nefarious activity
+\end{itemize}
+\end{itemize}
+\end{textblock}
+
+```{r elecembed, fig.height=6, fig.width=7, out.width="8.5cm", fig.align='right', dependson='typical'}
+plot(elecembed, embedded=FALSE, noutliers=1) +
+  xlim(-2.7,1.9) +
+  ggtitle("Laplacian eigenmap of 500 Irish households")
+```
+
+
+## Thanks
+
+\begin{textblock}{15.8}(0.1,1.15)
+\fontsize{8.5}{9}\sf\tabcolsep=0.02cm
+\begin{block}{}
+\centering
+\begin{tabular}{p{3.1cm}p{3.1cm}p{3.1cm}p{3.1cm}p{3.1cm}}
+  \includegraphics[height=2cm]{figs/dicook}   &
+  \includegraphics[height=2cm]{figs/kate}      &
+  \includegraphics[height=2cm]{figs/tas}      &
+  \includegraphics[height=2cm]{figs/souhaib}  &
+  \includegraphics[height=2cm]{figs/george}
+\\
+  Di Cook                                     &
+  Kate Smith-Miles                            &
+  Anastasios Panagiotelis                     &
+  Souhaib Ben Taieb                           &
+  George Athanasopoulos
+\\
+  \includegraphics[height=2cm]{figs/nick}     &
+  \includegraphics[height=2cm]{figs/earowang} &
+  \includegraphics[height=2cm]{figs/dilini}   &
+  \includegraphics[height=2cm]{figs/mitch}    &
+  \includegraphics[height=2cm]{figs/sevvandi}
+\\
+  Nick Tierney                                &
+  Earo Wang                                   &
+  Dilini Talagala                             &
+  Mitchell O'Hara-Wild                        &
+  Sevvandi Kandanarachchi
+\\
+  \includegraphics[height=2cm]{figs/cameron}  &
+  \includegraphics[height=2cm]{figs/puwasala} &
+  \includegraphics[height=2cm]{figs/thiyanga} &
+  \includegraphics[height=2cm]{figs/sayani}
+\\
+  Cameron Roach                               &
+  Puwasala Gamakumara                         &
+  Thiyanga Talagala                           &
+  Sayani Gupta
+\end{tabular}
+\end{block}
+\end{textblock}
+
+\begin{textblock}{3.5}(12.2,7.4)
+\begin{alertblock}{}\small
+Further information: \textbf{robjhyndman.com}
+\end{alertblock}
+\end{textblock}
