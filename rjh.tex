@@ -1,28 +1,6 @@
-\usepackage{MonashBlue,bm,fancyvrb,animate,multicol}
-
-% Monash title page
-\setbeamerfont{title}{series=\bfseries,parent=structure,size={\fontsize{22}{28}}}
-\setbeamertemplate{figs/title page}
-{\placefig{-0.01}{-0.01}{width=1.01\paperwidth,height=1.01\paperheight}{figs/title_16x9.pdf}
-\begin{textblock}{7.3}(1,2)\fontsize{22}{28}\sf
-{\color{white}\raggedright\usebeamerfont{title}\par
-Forecasting the future of the power industry\\vspace*{.4cm}\\fontsize{14}{14}\\newline\\sf What can you learn from\\vspace*{-0.5cm}\\newline smart meter data?}
-\end{textblock}
-\begin{textblock}{7.3}(1,7.3)
-{\raggedright{\alert{Rob J Hyndman}}\\[0.2cm]
-\insertdate}
-\end{textblock}}
+\usepackage{bm,fancyvrb,animate,multicol}
 
 \graphicspath{{figs/}}
-
-\AtBeginSection[] {
-  \begin{frame}
-  \frametitle{Outline}
-    \tableofcontents[currentsection]
-  \end{frame}
-}
-
-\setbeamercolor{description item}{fg=Orange}
 
 \def\pred#1#2#3{\hat{#1}_{#2|#3}}
 \def\damped{$_\text{d}$}
@@ -33,11 +11,6 @@ Forecasting the future of the power industry\\vspace*{.4cm}\\fontsize{14}{14}\\n
 \setlength{\parskip}{0pt}
 \def\fullwidth#1{\vspace*{-0.1cm}\par\centerline{\includegraphics[width=16cm]{#1}}}
 \def\fullheight#1{\vspace*{-0.1cm}\par\centerline{\includegraphics[height=7.5cm]{#1}}}
-
-\fontsize{13}{15}\sf
-\usepackage[scale=0.85]{sourcecodepro}
-\DisableLigatures{encoding = T1, family = tt*}
-\usepackage[lf,t]{carlito}
 
 % Some local commands
 \def\pred#1#2#3{\hat{#1}_{#2|#3}}
@@ -75,25 +48,5 @@ Forecasting the future of the power industry\\vspace*{.4cm}\\fontsize{14}{14}\\n
 \newcommand{\X}{\mathbf{X}}
 \newcommand{\x}{\mathbf{x}}
 \renewcommand{\H}{\mathbf{H}}
-
-\newcommand{\MEFM}{\begin{alertblock}{}\vspace*{-0.65cm}
-\begin{align*}
-\log(y_{t})  &= \log(\bar{y}_i) + \log(y^*_t) \\
-\log(\bar{y}_{i})  &= f(\text{GSP, price, HDD, CDD}) + \varepsilon_{i} \\
-\log(y^*_{t}) &= f(\text{calendar effects}, \text{temperatures}) + e_{t}
-\end{align*}\vspace*{-0.95cm}\end{alertblock}}
-
-\newcommand{\mefm}{\begin{alertblock}{} %\vspace*{-0.15cm}
-\centerline{$\displaystyle\log(y^*_{t}) = f(\text{calendar effects}, \text{temperatures}) + e_{t}$}
-%\vspace*{-0.05cm}
-\end{alertblock}}
-
-\newcommand{\mefmshort}{\begin{alertblock}{}\vspace*{-0.65cm}
-\begin{align*}
-\log(y_{t})  &= \log(\bar{y}_i) + \log(y^*_t) \\
-\log(\bar{y}_{i})  &= f(\text{GSP, price, HDD, CDD}) + \varepsilon_{i} \\
-\log(y^*_{t}) & = f(\text{calendar effects}, \text{temperatures},\hspace*{1cm}\\
-&\hspace*{4.5cm} \text{lagged demand}) + e_{t}
-\end{align*}\vspace*{-0.95cm}\end{alertblock}}
 
 \setbeamercolor{gray}{fg=black,bg=white!90!black}
