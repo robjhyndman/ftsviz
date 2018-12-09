@@ -18,39 +18,49 @@ frmort <- tibble(
 frmort %>%
   ggplot(aes(x = age, y = mortrate, group = year)) +
 	  geom_line() +
-	  facet_grid(~sex) +
+    xlab("Age") + ylab("Log mortality") +
+    facet_grid(~sex) +
 	  scale_y_log10()
 
 # Mapping time to colour
 frmort %>%
   ggplot(aes(x = age, y = mortrate, group = year, col = year)) +
 	  geom_line() +
-	  facet_grid(~sex) +
+    xlab("Age") + ylab("Log mortality") +
+    facet_grid(~sex) +
 	  scale_y_log10()
 
 frmort %>%
   ggplot(aes(x = age, y = mortrate, group = year, col = year)) +
 	  geom_line() +
-	  facet_grid(~sex) +
-	  scale_y_log10() +
-	  scale_color_gradientn(colours = rainbow(10))
+    xlab("Age") + ylab("Log mortality") +
+    facet_grid(~sex) +
+    scale_y_log10() +
+    scale_color_gradientn(colours = rainbow(10))
 
-# Putting time on horizontal axis and mapping x to colour.
+# Map time to animation time
 
+library(gganimate)
 frmort %>%
-  ggplot(aes(x = year, y = mortrate, group = age, col = age)) +
-	  geom_line() +
-	  facet_grid(~sex) +
-	  scale_y_log10() +
-	  scale_color_gradientn(colours = rainbow(10))
-
+  filter(year > 1900) %>%
+  ggplot(aes(x = age, y = mortrate, group = year, col = year)) +
+  geom_line() +
+  xlab("Age") + ylab("Log mortality") +
+  facet_grid(~sex) +
+  scale_y_log10() +
+  scale_color_gradientn(colours = rainbow(10)) +
+  transition_time(year) +
+  ease_aes('linear') +
+  shadow_mark(colour = "grey70") +
+  labs(title = 'Year: {frame_time}')
+  
 # 3-d plots
 
 frmort %>%
   ggplot(aes(x = year, y = age, fill = log(mortrate))) +
-	  geom_raster() +
 	  facet_grid(~sex) +
-	  scale_fill_viridis_c(option = "A", direction = -1)
+    geom_raster() +
+    scale_fill_viridis_c(option = "A", direction = -1)
 
 ## ACF plots
 # Functional ACF requires cross-correlations for ages
