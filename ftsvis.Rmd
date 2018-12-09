@@ -319,6 +319,8 @@ Can we compute pairwise distances between all households?
  * Similarity between two households: $\displaystyle w_{ij} = \exp(-\Delta_{ij}^2/h^2)$\pause
  * Household typicality: $\displaystyle f_i = \sum_{j} w_{ij}$.
 
+
+
 ## Most typical household
 
 ```{r typical, dependson='load'}
@@ -337,6 +339,38 @@ qdemandplot(mode1)
 outlier1 <- order(fxyhi,decreasing=FALSE)[1]
 qdemandplot(outlier1)
 ```
+
+## Laplacian eigenmaps
+\fontsize{13}{15}\sf
+
+> - **Idea:** Embed conditional densities in a 2d space where the distances are preserved "as far as possible".
+> -
+ \begin{align*}
+ \\[-1.36cm]
+ \text{Let}\quad
+   \bm{W} &=[w_{ij}] &&\text{~~ where~}w_{ij} = \exp(-\Delta_{ij}^2/h^2).\\
+   \bm{D} &= \text{diag}(\hat{f}_i) &&\text{~~ where~}\hat{f}_i = \sum_{j=1}^n w_{ij}\\
+   \bm{L} &=\bm{D}-\bm{W} &&\text{~~ (the Laplacian matrix).}\hspace{5cm}
+ \end{align*}
+> - Solve generalized eigenvector problem: $\bm{L}\bm{e} = \lambda \bm{D}\bm{e}$.
+> - Let $\bm{e}_k$ be eigenvector corresponding to $k$th \emph{smallest} eigenvalue.
+> - Then $\bm{e}_2$ and $\bm{e}_3$ create an embedding of households in 2d space.
+
+## Key property of Laplacian embedding
+
+Let $y_i = (e_{2,i},e_{3,i})$ be the embedded point corresponding to household $i$.
+
+\begin{block}{}
+Then the Laplacian eigenmap minimizes
+$$
+  \sum_{ij} w_{ij}(y_i-y_j)^2 = \bm{y}'\bm{L}\bm{y} \qquad\text{such that}\quad
+\bm{y}'\bm{D}\bm{y}=1.
+$$
+\end{block}\pause
+
+ > - the most similar points are as close as possible.
+ > - First eigenvalue is 0 due to translation invariance.
+ > - Equivalent to optimal embedding using Laplace-Beltrami operator on manifolds.
 
 ## Visualization via embedding
 
