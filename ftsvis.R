@@ -18,27 +18,31 @@ frmort <- tibble(
 frmort %>%
   ggplot(aes(x = age, y = mortrate, group = year)) +
 	  geom_line() +
-    xlab("Age") + ylab("Log mortality") +
     facet_grid(~sex) +
-	  scale_y_log10()
+    scale_y_log10() +
+    xlab("Age") + ylab("Log mortality")
 
 # Mapping time to colour
 frmort %>%
   ggplot(aes(x = age, y = mortrate, group = year, col = year)) +
-	  geom_line() +
-    xlab("Age") + ylab("Log mortality") +
+    geom_line() +
     facet_grid(~sex) +
-	  scale_y_log10()
+    scale_y_log10() +
+    xlab("Age") + ylab("Log mortality")
 
 frmort %>%
   ggplot(aes(x = age, y = mortrate, group = year, col = year)) +
-	  geom_line() +
-    xlab("Age") + ylab("Log mortality") +
+    geom_line() +
     facet_grid(~sex) +
     scale_y_log10() +
+    xlab("Age") + ylab("Log mortality") +
     scale_color_gradientn(colours = rainbow(10))
 
 # Map time to animation time
+# This requires the transformr package on CRAN and the gganimate package on github
+# Run the following two lines if you don't already have them.
+#install.packages(c("transformr", "devtools"))
+#devtools::install_github("thomasp85/gganimate")
 
 library(gganimate)
 frmort %>%
@@ -53,7 +57,7 @@ frmort %>%
   ease_aes('linear') +
   shadow_mark(colour = "grey70") +
   labs(title = 'Year: {frame_time}')
-  
+
 # 3-d plots
 
 frmort %>%
