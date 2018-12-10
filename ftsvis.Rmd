@@ -2,7 +2,7 @@
 title: "Data visualization for functional time series"
 author: "Rob J Hyndman"
 date: "11 December 2018"
-abstract: Any good data analysis begins with a careful graphical exploration of the observed data. For functional time series data, this area of statistical analysis has been largely neglected. I will look at the tools that are available such as rainbow plots and functional box plots, and propose several new tools including functional ACF plots, functional season plots, calendar plots, and embedded pairwise distance plots. These will be illustrated using pedestrian count data in Melbourne, smart metre data from Ireland, and mortality data from France.
+abstract: Any good data analysis begins with a careful graphical exploration of the observed data. For functional time series data, this area of statistical analysis has been largely neglected. I will look at the tools that are available such as rainbow plots and functional box plots, and propose several new tools including functional ACF plots, functional season plots, calendar plots, and embedded pairwise distance plots. These will be illustrated using pedestrian count data in Melbourne, smart meter data from Ireland, and mortality data from France.
 output:
   binb::monash:
     fig_height: 5
@@ -31,7 +31,7 @@ source("data/functions.R")
 
 # Time-indexed probability distributions
 
-## Smart metre data
+## Smart meter data
 
 \alert{vec.ausnetservices.com.au}
 
@@ -272,7 +272,7 @@ cpc %>%
 * Allows clustering of households based on probabilistic behaviour rather than coincident behaviour.
 * A more complicated version also allows it to change across the year.
 
-## Finding anomalous smart metres
+## Finding anomalous smart meters
 
 ```{r load, include=FALSE}
 load("data/DT.rda")
@@ -281,7 +281,7 @@ load("data/jsdmat.rda")
 source("data/functions.R")
 ```
 
-\begin{block}{Irish smart metre data}
+\begin{block}{Irish smart meter data}
 \begin{itemize}\tightlist
  \item 500 households from smart metering trial:\\ 14 July 2009 -- 31 December 2010.
  \item Electricity consumption at 30-minute intervals.
@@ -298,7 +298,7 @@ $\longrightarrow$
 
 The time series of $535\times48$ observations per household is mapped to a set of $7\times48\times99$ percentiles giving a bivariate surface for each household.
 
-## Finding anomalous smart metres
+## Finding anomalous smart meters
 \fontsize{14}{15}\sf\vspace*{-0.2cm}
 \begin{block}{}
 Can we compute pairwise distances between all households?
