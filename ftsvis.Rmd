@@ -283,7 +283,7 @@ source("data/functions.R")
 
 \begin{block}{Irish smart meter data}
 \begin{itemize}\tightlist
- \item 500 households from smart metre trial:\\ 14 July 2009 -- 31 December 2010.
+ \item 500 households from smart metering trial:\\ 14 July 2009 -- 31 December 2010.
  \item Electricity consumption at 30-minute intervals.
  \item Heating/cooling energy usage excluded.
 \end{itemize}
